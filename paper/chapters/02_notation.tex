@@ -1,0 +1,145 @@
+\chapter{研究对象、符号与源码口径}
+
+本章为全文建立统一语言。石器时代的玩家经验、工具页面、源码变量和数学符号存在差异,需要统一澄清。本文将人物、宠物、骑宠、蛋与战斗状态置于同一符号体系下,并显式说明随机、取整与上下限的作用位置。
+
+\section{研究对象与版本口径}
+
+本文研究对象包括五类：人物、宠物、骑宠状态下的人物--宠物组合、融合蛋，以及战斗中的敌方单位。这些对象的机制相互关联：宠物成长档位影响战斗敏捷，骑宠状态混合人物与宠物的攻防敏属性，蛋喂药和孵化通过成长率映射到命中、回避、会心和伤害。
+
+本文的主要源码依据是当前项目的 \code{gmsv} 代码树及其配套文档。对于已验证的机制,本文直接给出公式；对于尚未完全核实的机制,在正文中标记为”待进一步校核”。在骑宠、职业技能与属性状态系统相关部分,编译开关会改变具体实现,全文默认采用当前项目已核对的主要口径：骑宠三围与战斗伤害以 \code{_BATTLE_NEWPOWER} 分支为主,必要时指出 \code{_BACK_VERSION} 的参与情况。
+
+本文构建的是对当前源码口径自洽、可计算、可验证的数值模型,而非还原”所有可能的服务器实现”。后文若无特别说明,”成立””等于””上限””下限”等表述均指”在当前 \code{gmsv} 源码与编译路径下成立”。
+
+\section{统一符号体系}
+
+本文采用表~\ref{tab:global-symbols} 和表~\ref{tab:battle-symbols} 所示的统一符号体系。表~\ref{tab:global-symbols} 列出成长与对象记号,表~\ref{tab:battle-symbols} 列出战斗概率记号；完整符号索引、别名与源码变量对应关系见附录~A。
+
+在记号选择上,宠物基础成长档统一记作 $\bm{g}$,蛋基础成长统一记作 $\bm{b}$,孵化后成长统一记作 $\bm{h}$。玩家常用的 \vstd{} 在正文中作为玩家口径别名出现,不与 $\bm{g}$ 并列为主记号。
+
+\begin{table}[H]
+    \centering
+    \caption{全局核心符号与成长相关记号}
+    \label{tab:global-symbols}
+    \begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{2.5cm} >{\raggedright\arraybackslash}p{3.0cm} X@{}}
+        \toprule
+        记号 & 含义 & 说明 \\
+        \midrule
+        $V,S,T,D$ & 宠物四项成长率 & 分别对应生命、攻击、防御、敏捷方向的成长来源 \\
+        $\bm{g}$ & 基础成长档 & 正文主记号；玩家口径常把它写成 \vstd{} \\
+        $VSTD$ & 四项成长和 & 定义为 $V+S+T+D$ \\
+        $L_v$ & 宠物等级 & 用于区分蛋、孵化后宠物、转生前宠物等阶段 \\
+        $\bm{b}$ & 蛋基础成长 & 融合完成后、喂药前或喂药后的蛋面值 \\
+        $\bm{h}$ & 孵化后成长 & 不含出生后额外随机加点的孵化结果 \\
+        \shortstack[l]{$\mathrm{HP}, \mathrm{ATK},$\\$\mathrm{DEF}, \mathrm{SPD}$} & 宠物面板四围 & 分别表示界面中显示的生命、攻击、防御、敏捷数值 \\
+        $x_1,x_2,x_3,x_4$ & 线性目标函数权重 & 用于喂药优化、养成反推等问题 \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \caption{战斗核心符号与概率记号}
+    \label{tab:battle-symbols}
+    \begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{2.5cm} >{\raggedright\arraybackslash}p{3.0cm} X@{}}
+        \toprule
+        记号 & 含义 & 说明 \\
+        \midrule
+        \attdex & 攻击方固定敏 & 在玩家 PVP 简化模型中通常对应 \fixdex{} \\
+        \defdex & 防守方固定敏 & 在玩家 PVP 简化模型中通常对应防守方 \fixdex{} \\
+        $L$ & 幸运修正 & 依上下文代表攻方或守方幸运，玩家有效范围通常为 $1\sim 5$ \\
+        $C$ & 武器会心值 & 源码中的武器会心附加参数 \\
+        $F$ & 反击武器系数 & 玩家反击率中的武器对武器系数 \\
+        $\alpha,\beta,\gamma$ & 概率参数 & 分别对应回避、会心、反击公式中的主参数 \\
+        $p_{\mathrm{duck}}$ & 普通回避率 & 不含独立前判的普通闪避概率 \\
+        $p_{\mathrm{hit}}$ & 普通命中率 & 通常定义为 $100\%-p_{\mathrm{duck}}$ \\
+        $p_{\mathrm{crit}}$ & 会心率 & 当前为普通物理会心判定 \\
+        $p_{\mathrm{counter}}$ & 反击率 & 在满足反击前提后的成功概率 \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+在战斗层面，本文特别区分两类敏捷变量。其一是 \fixdex{}，可理解为”这回合用于命中、回避、会心、反击等概率判定的固定敏”；其二是 \quick{}，可理解为”这回合真正用于行动顺序计算的速度敏”。在大多数情况下，\quick{} 由 \fixdex{} 经过战斗修正后生成，但并不总是与后者相等。因此，后文若讨论命中、回避或会心，优先使用”固定敏”；若讨论乱敏、先手与速度档，则优先使用”战斗速度敏”。
+
+\section{术语约定}
+
+为保证全文表述的一致性与可追溯性，本文采用三层并行的术语映射规则：
+
+\begin{description}[leftmargin=2.5cm,style=nextline]
+\item[\textbf{源码层}] 使用 \code{WORKFIXDEX}、\code{WORKQUICK}、\code{BATTLE\_COM\_GUARD} 等源码标识符，保持与 \code{gmsv} 代码的字面一致性。源码层表述主要出现在需要精确定位实现细节的场合。
+
+\item[\textbf{数学层}] 使用 $\attdex$、$\defdex$、$p_{\mathrm{duck}}$、$\bm{g}$ 等数学符号，用于公式推导与定量分析。数学层符号与源码变量的对应关系见附录~A。
+
+\item[\textbf{语义层}] 使用”固定敏””战斗速度敏””普通回避率””咒术动作分支”等中文术语，用于解释机制含义与玩家理解。语义层表述优先采用玩家社区的通用说法，但会在首次出现时明确其源码对应。
+\end{description}
+
+正文中优先使用数学符号进行推导，必要时在括号内注明源码标识或语义说明。例如：”攻击方固定敏 $\attdex$ (对应源码变量 \fixdex{})”。对于动作类型与状态标记，优先使用源码标识并附语义解释，例如：”\code{BATTLE\_COM\_JYUJYUTU} (咒术动作分支)”。
+
+\section{随机、取整与上下限}
+
+战斗与宠物系统的争议主要源于三个位置：随机发生位置、截断发生位置、上限施加位置。本节按这三个层次说明。
+
+\subsection{随机宏的整数性质}
+
+源码中频繁使用随机宏：
+\begin{equation}
+    \operatorname{RAND}(x,y) = (x-1)+1+\left\lfloor \frac{(y-(x-1))r}{RAND\_MAX+1} \right\rfloor,
+\end{equation}
+其中 $r$ 为区间 $[0,RAND\_MAX]$ 上的随机整数。关键性质是其\emph{输出恒为整数}。无论出现在蛋喂药、升级成长、乱敏、命中附加、伤害抖动还是状态触发中,随机结果在进入后续公式前已回到整数域。
+
+\subsection{截断而非四舍五入}
+
+源码中大量百分比计算以浮点形式出现,但目标变量为整数,赋值时发生截断。例如
+\begin{equation}
+    \attdex^{\prime}=\lfloor 0.8\,\attdex \rfloor, \qquad \defdex^{\prime}=\lfloor 0.6\,\defdex \rfloor,
+\end{equation}
+以及
+\begin{equation}
+    d' = \lfloor 0.9 d \rfloor.
+\end{equation}
+凡涉及 $0.8$、$0.6$、$0.9$ 等身份修正、状态修正或百分比修正,若最终回写到整数变量,均为向下截断而非四舍五入。对宠物成长与蛋喂药问题,离散截断改变最优方案的边界(见第~\ref{chap:optimization-and-cases}~章定理~\ref{thm:feed-boundary})；对战斗概率问题,截断改变临界敏捷差和阈值位置。
+
+\subsection{裁切算子的统一表示}
+
+为统一书写上限与下限,定义裁切算子
+\begin{equation}
+    \operatorname{clip}_{[a,b]}(z) = \min\{\max\{z,a\},b\}.
+\end{equation}
+例如,在玩家 PVP 的简化回避模型中,普通回避率可写为
+\begin{equation}
+    p_{\mathrm{duck}}(\attdex,\defdex,L) = \operatorname{clip}_{[0.01,75.00]}\!\bigl(d_{\mathrm{base}}(\attdex,\defdex)+L\bigr),
+\end{equation}
+会心率可写为
+\begin{equation}
+    p_{\mathrm{crit}}(\attdex,\defdex,L,C) = \operatorname{clip}_{[0.01,100.00]}\!\bigl(c_{\mathrm{base}}(\attdex,\defdex,C)+L\bigr).
+\end{equation}
+该写法将”基础体”和”上限效应”分离。后文做偏导和单调性分析时,先分析基础函数,再讨论被裁切区间内导数变为零的情形。
+
+\subsection{需要特别留意的三个离散位置}
+
+全文中需要谨慎处理的离散点有三类。第一类是\emph{身份修正},例如人物打宠物、宠物打敌人时的 $0.6$ 或 $0.8$ 缩放；第二类是\emph{成长压缩与上限},例如宠物单项成长上限和总和上限；第三类是\emph{概率裁切},例如 $75\%$ 的回避上限和 $100\%$ 的会心上限。它们共同决定一个重要事实：玩家直觉中的”边际收益连续变化”在真实系统中不成立,经常出现平台、跳变和局部非单调区间。
+
+\section{源码变量与游戏文本映射}
+
+为兼顾源码准确性与玩家可读性,表~\ref{tab:code-game-map} 整理\emph{不提前解释易误读正文}且偏”动作语义/状态语义”的源码标识。\code{WORKFIXDEX}、\code{WORKQUICK}、\code{WORKFIXLUCK} 等通用工作值已在附录~A 中完整定义,不在本表重复。
+
+\begin{table}[H]
+    \centering
+    \caption{高频源码动作 / 状态与玩家语义映射}
+    \label{tab:code-game-map}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.30\textwidth} >{\raggedright\arraybackslash}p{0.18\textwidth} X}
+        \toprule
+        源码标识 & 玩家口径 & 说明 \\
+        \midrule
+        \code{BATTLE_COM_GUARD} & 防御 & 当前动作为防御时，普通闪避函数最前面直接失败 \\
+        \code{BATTLE_COM_JYUJYUTU} & 咒术动作分支 & 名称对应日文“咒术”的罗马字写法；当前主要覆盖人物法术、魔法道具与部分宠技；不是防御；若防守方当前动作是该分支，普通回避参数改为 $0.027$ \\
+        \code{CHAR_BATTLEFLG_NODUCK} & 不能闪避 & 一旦存在，该单位无法通过普通回避公式闪避 \\
+        \code{CHAR_BATTLEFLG_AIBAD} & 本回合忠诚失控标记（nono） & 由宠物忠诚检查临时置位，表示本回合没有按玩家原指令行动 \\
+        \code{CHAR_BATTLEFLG_REVERSE} & 属性反转状态 & 作用层级需结合具体公式分析，是第~\ref{chap:dynamic-attr} 章重点之一 \\
+        \code{CHAR_WORKBATTLECOM3} & 动作附加参数槽 & 高 16 位与低 16 位在不同动作下含义不同 \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+其中,\code{CHAR_WORKBATTLECOM3} 需要特别说明。它不是单一含义的数值,而是”当前动作的附加参数寄存槽”。在职业技能中,常以”高 16 位存技能等级、低 16 位存阵列或子类型”形式出现；在法术和法术道具中,又改为”低位存法术编号,高位存等级或附加参数”。脱离当前动作编号而单独解读 \code{CHAR_WORKBATTLECOM3} 易造成误判。
+
+综上,本文采用”源码标识 + 数学符号 + 玩家语义”三层并行写法：需要精确时使用源码标识,需要推导时使用数学记号,需要解释时回到玩家语言。这样既保证公式严谨,也保证章节之间顺畅衔接。

@@ -1,0 +1,70 @@
+\chapter{公式总表}
+
+本附录汇总正文中的关键公式与约束条件，便于从“想查哪条公式”反向定位到相应章节。表中的“编号”使用正文中的公式标签。
+
+\small
+\begin{longtable}{>{\raggedright\arraybackslash}p{3.2cm} >{\raggedright\arraybackslash}p{3cm} >{\raggedright\arraybackslash}p{7.2cm}}
+\toprule
+编号 & 所在章节 & 含义 \\
+\midrule
+\endfirsthead
+\toprule
+编号 & 所在章节 & 含义 \\
+\midrule
+\endhead
+\code{eq:pet-display-map} & 第 3 章 & 宠物原始累计点到显示 HP/ATK/DEF/SPD 的映射 \\
+\code{eq:lv1-raw} & 第 3 章 & 一级初始化 raw 点数公式 \\
+\code{eq:levelup-delta} & 第 3 章 & 升级时每一维 raw 点增长量 \\
+\code{eq:trans-ans-raw} & 第 4 章 & 转生能力值原始公式 \\
+\code{eq:trans-ans-cap} & 第 4 章 & 转生能力上限裁切 \\
+\code{eq:trans-new-alloc} & 第 4 章 & 转生能力值按权重分配到四维成长 \\
+\code{eq:fusion-level-discount} & 第 4 章 & 低于 80 级融合素材的逐项折扣 \\
+\code{eq:sub-avg} & 第 4 章 & 副宠逐项平均的取整公式 \\
+\code{eq:egg-base} & 第 4 章 & 蛋基础成长生成公式 \\
+\code{eq:feed-fold} & 第 4 章 & 蛋药原始值向工作值的折算公式 \\
+\code{eq:work-cap} & 第 4 章 & 50 总和压缩 \\
+\code{eq:hatch-pre} & 第 4 章 & 孵化前的初步成长生成公式 \\
+\code{eq:hatch-final} & 第 4 章 & 最终 150 总和压缩 \\
+\code{eq:turn-normal} & 第 6 章 & 默认乱敏顺序值公式 \\
+\code{eq:turn-item} & 第 6 章 & 道具使用的顺序值公式 \\
+\code{eq:turn-quick} & 第 6 章 & 迅速攻击类顺序值公式 \\
+\code{eq:turn-ref-mounted} & 第 6 章 & 骑宠状态下默认档参照敏捷公式 \\
+\code{eq:dodge-base} & 第 7 章 & 玩家 PVP 简化回避基础体 \\
+\code{eq:dodge-final} & 第 7 章 & 玩家打玩家时的源码离散回避率公式 \\
+\code{eq:hit-final} & 第 7 章 & 玩家打玩家时的源码离散命中率公式 \\
+\code{eq:crit-final} & 第 7 章 & 玩家打玩家时的源码离散会心率公式 \\
+\code{eq:counter-final} & 第 7 章 & 玩家打玩家时的源码离散反击率公式 \\
+\code{eq:hit-derivative} & 第 7 章 & 命中率对攻方敏捷的一阶导表达式 \\
+\code{eq:crit-derivative} & 第 7 章 & 会心率在 $\attdex<\defdex$ 区间的一阶导表达式 \\
+\code{eq:counter-derivative} & 第 7 章 & 反击率在 $\attdex<\defdex$ 区间的一阶导表达式 \\
+\code{eq:magic-miss-player} & 第 8 章 & 普通属性法术打玩家的未命中基数 \\
+\code{eq:magic-hit-player} & 第 8 章 & 普通属性法术打玩家的命中率 \\
+\code{eq:prof-miss-player} & 第 8 章 & 职业法术打玩家的第一段未命中基数 \\
+\code{eq:prof-hit-stage1} & 第 8 章 & 职业法术第一段命中率 \\
+\code{eq:prof-hit-stage2} & 第 8 章 & 职业法术二段判定的组合命中率 \\
+\code{eq:magic-damage-layer} & 第 8 章 & 职业法术命中后的伤害层 \\
+\code{eq:fieldpow} & 第 9 章 & 场地倍率 \code{FieldPow} 公式 \\
+\code{eq:field-damage} & 第 9 章 & 场地对属性伤害的缩放位置 \\
+\code{eq:boundary-power} & 第 9 章 & 结界强度的分段规则 \\
+\code{eq:ice-enclose} & 第 9 章 & 冰附体对固定敏的作用式 \\
+\code{eq:reverse-map} & 第 9 章 & 属性反转的四属性互换映射 \\
+\code{eq:ride-atk-ranged} & 第 10 章 & 骑宠远程攻击混合公式 \\
+\code{eq:ride-atk-melee} & 第 10 章 & 骑宠近战攻击混合公式 \\
+\code{eq:def-no-ride} & 第 10 章 & 未骑宠时进入物伤公式的防御量 \\
+\code{eq:def-ride} & 第 10 章 & 骑宠时进入物伤公式的防御量 \\
+\code{eq:ride-quick-ranged} & 第 10 章 & 骑宠远程攻击侧速度混合 \\
+\code{eq:ride-quick-melee} & 第 10 章 & 骑宠近战攻击侧速度混合 \\
+\code{eq:ride-quick-def} & 第 10 章 & 骑宠防守侧速度混合 \\
+\code{eq:damage-stage1} & 第 10 章 & 物理伤害第一段 \\
+\code{eq:damage-stage2} & 第 10 章 & 物理伤害第二段 \\
+\code{eq:damage-stage3} & 第 10 章 & 物理伤害第三段 \\
+\code{eq:crit-damage} & 第 10 章 & 会心附加伤害公式 \\
+\code{eq:growth-main-path} & 第 11 章 & 成长维度到战斗属性的主路径映射 \\
+\code{eq:linear-hatch-target} & 第 11 章 & 孵化后成长空间上的线性代理目标 \\
+\code{eq:global-opt} & 第 12 章 & 全局培养优化问题的统一形式 \\
+\code{eq:feed-constraint} & 第 12 章 & 40 药约束 \\
+\code{eq:hatch-opt} & 第 12 章 & 蛋喂药的中间优化问题 \\
+\bottomrule
+\end{longtable}
+\normalsize
+
